@@ -17,10 +17,10 @@ node pngOptimization.js
 <br />Configure optimizationConfig.json
 ```
 {
-  "pngquantPath": "./myPathToPngQuant/pngquant.exe",
+  "pngquantPath": "./myPngquantPath/pngquant.exe",
   "list": [
   	{
-  		"path"    : "./pathWhereAllPngWillBeOptimized",
+  		"path"    : "./pathOfFolderWhereAllPngWillBeOptimized",
   		"command" : "--ext .png --force --verbose 256"
   	},
     {
