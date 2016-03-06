@@ -8,11 +8,11 @@ function init(){
     fs.readJson("./optimizationConfig.json", function(err, config){
         if (err){
             if (err.code == 'ENOENT'){
-                console.log("ConfigException : Config do not exist. Creation of default config file 'optimizationConfig.json'. Please complete it.");
+                console.log("ConfigException : Config does not exist. Creation of default config file 'optimizationConfig.json'. Please complete it.");
                 fs.writeJson('./optimizationConfig.json', 
                     {
-                        pngquantPath    : "",
-                        pngsFolderPaths : []
+                        pngquantPath : "",
+                        list         : []
                     }, 
                     function (err) {
                         if (err) {
@@ -27,32 +27,60 @@ function init(){
             return;
         }
 
-        if (!config.pngsFolderPaths || !config.pngsFolderPaths.length){
-            console.log("ConfigException : do not find any folders of pngs");
+        if (!config.list || !config.list.length){
+            console.log("ConfigException : do not find any optimization of pngs in list");
             return;
         }
 
-        var folderPath;
+        var optimization;
+        var path; 
+        var command;
         var files;
         var file;
+        var lstat;
 
-        for (var folderIndex in config.pngsFolderPaths){
-            folderPath = config.pngsFolderPaths[folderIndex];
-            files      = getFiles(folderPath);
+        for (var i in config.list){
+            optimization = config.list[i];
+            path         = optimization.path    || "";
+            command      = optimization.command || "";
+            lstat        = fs.lstatSync(path);
             
-            for (var fileIndex in files){
-				file = files[fileIndex];
-				
-				if (file.indexOf(PNG_EXTENSION) == file.length - PNG_EXTENSION.length && file.length >= PNG_EXTENSION){
-					execPngquant(configCopy.pngquantPath, pngFiles[fileIndex]);
+            if (lstat.isDirectory()){
+            	files = getFiles(path);
+
+            	if (!files.length){
+            		console.log("Folder : " + path + " is empty.");
+            		continue;
+            	}
+
+            	for (var fileIndex in files){
+					file = files[fileIndex];
+					
+					if (file.indexOf(PNG_EXTENSION) == file.length - PNG_EXTENSION.length && file.length >= PNG_EXTENSION.length){
+						execPngquant(config.pngquantPath, file, command);
+					}
 				}
-			}
+
+            } else if (lstat.isFile()) {
+            	if (file.indexOf(PNG_EXTENSION) == file.length - PNG_EXTENSION.length && file.length >= PNG_EXTENSION.length){
+            		execPngquant(config.pngquantPath, path, command);
+				} else {
+					console.log("ConfigException : " + path + ", use pngquant only for png!");
+				}
+            } else {
+            	console.log("ConfigException : " + path + " not supported");
+            }
         }
     });
 }
 
-function execPngquant(pngquantPath, file){
-	var script_process = child_process.spawn(pngquantPath, ["--ext", ".png", "--force", "--verbose", "256", file]);
+function execPngquant(pngquantPath, file, command){
+	console.log("Starting optimization for " + file + " with command " + command)
+
+	command = command.split(" ");
+	command.push(file);
+
+	var script_process = child_process.spawn(pngquantPath, command);
 	
 	script_process.stdout.on('data', function (data) {
 		console.log('stdout: ' + data);
